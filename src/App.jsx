@@ -1,62 +1,54 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from 'axios' // Importa la librería axios para hacer solicitudes HTTP
 
+const API_URL = 'https://dog.ceo/api/breeds/image/random'
+
+  // Componente principal de la aplicación
 function App() {
-  const [dogUrl, setDogUrl] = useState('')
+  const [urls, setUrls] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [fetchId, setFetchId] = useState(0)
 
-  useEffect(() => {
-    let ignore = false
-
-    ;(async () => {
-      try {
-        const response = await axios.get('https://dog.ceo/api/breeds/image/random')
-        if (!ignore) setDogUrl(response.data.message)
-      } catch {
-        if (!ignore) setError("No se pudo cargar el perrito ")
-      } finally {
-        if (!ignore) setLoading(false)
-      }
-    })()
-
-    return () => { ignore = true }
-  }, [fetchId])
-
-  const fetchDog = () => {
-    setFetchId(id => id + 1)
+  // Función para obtener tres imágenes de perros aleatorias
+  const fetchAll = () => {
     setLoading(true)
-    setError(null)
+    Promise.all([
+      axios.get(API_URL),
+      axios.get(API_URL),
+      axios.get(API_URL),
+    ]).then(responses => {
+      setUrls(responses.map(r => r.data.message))
+      setLoading(false)
+    })
   }
 
+  // Llamada a fetchAll cuando el componente se monta
+  useEffect(() => { fetchAll() }, [])
+
+  // Renderizado del componente
   return (
-    <div className="text-center font-sans mt-12">
-      <h1 className="text-4xl font-bold text-white mb-8">
-        Mini SPA de Perritos con React
-      </h1>
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+      <div className="rounded-2xl p-6 max-w-lg w-full">
+        <h1 className="text-2xl font-bold text-center text-yellow-400 mb-6">DOG SLOTS</h1>
 
-      <div className="w-[350px] h-[350px] mx-auto mb-6 flex items-center justify-center border border-gray-600 rounded-xl overflow-hidden bg-gray-800">
-        {loading ? (
-          <p className="text-gray-400">Cargando perrito...</p>
-        ) : error ? (
-          <p className="text-red-400">{error}</p>
-        ) : (
-          <img
-            src={dogUrl}
-            alt="Perro aleatorio"
-            className="w-full h-full object-cover"
-          />
-        )}
+        <div className="flex justify-center gap-4 mb-8">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="w-35 h-35 rounded-lg flex items-center justify-center overflow-hidden">
+              {loading ? (
+                <span className="animate-bounce text-4xl">🐕</span>
+              ) : (
+                <img src={urls[i]} alt="perro" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+          
+        <button onClick={fetchAll} disabled={loading} // Botón para obtener nuevas imágenes de perros
+          className={`w-full px-4 py-3 font-bold rounded-lg ${
+            loading ? 'text-gray-400' : 'bg-red-600 text-white hover:bg-red-500'
+          }`}>
+          {loading ? 'Cargando...' : 'Nuevos perros'}
+        </button>
       </div>
-
-      <button
-        onClick={fetchDog}
-        disabled={loading}
-        className="px-6 py-3 text-base font-semibold rounded-lg cursor-pointer bg-cyan-500 text-white hover:bg-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {loading ? 'Buscando...' : '¡Otro perrito!'}
-      </button>
     </div>
   )
 }
